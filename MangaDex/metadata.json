@@ -1,0 +1,9 @@
+{
+    "name": "MangaDex Extension",
+    "version": "1.0.0",
+    "description": "Provides manga data from MangaDex",
+    "sourceRepo": "https://github.com/your-org/mangadex-extension",
+    "icon": "https://mangadex.org/img/brand/mangadex-logo.svg",
+    "supportedFeatures": ["search", "fetchByID", "getChapters"],
+    "lastUpdated": "2024-10-29"
+}
