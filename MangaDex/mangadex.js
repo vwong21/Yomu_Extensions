@@ -44,9 +44,25 @@ const getMangaList = async (title) => {
 };
 
 const browse = async () => {
+	const mangaList = {};
 	try {
-		const res = await axios.get(`${baseURL}/manga?limit=10`);
-		console.log(res.data.data.relationship);
+		const res = await axios.get(
+			`${baseURL}/manga?limit=10&includes[]=cover_art`
+		);
+		const data = res.data.data;
+		data.forEach((manga) => {
+			const id = manga.id;
+			const title = manga.attributes.title;
+			const cover_art =
+				manga.relationships.find(
+					(relation) => relation.type === 'cover_art'
+				) || null;
+			mangaList[id] = {
+				title: title,
+				cover_art: cover_art,
+			};
+		});
+		console.log(mangaList);
 	} catch (error) {
 		console.error(error);
 	}
