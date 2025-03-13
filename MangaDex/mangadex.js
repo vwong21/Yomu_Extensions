@@ -1,5 +1,4 @@
 import axios from 'axios';
-
 const baseURL = 'https://api.mangadex.org';
 const baseCoverURL = 'https://uploads.mangadex.org/covers';
 
@@ -43,11 +42,14 @@ const getMangaList = async (title) => {
 	}
 };
 
-const browseMangaDex = async () => {
+const browseMangaDex = async (offset = 0) => {
+	if (typeof offset !== 'number' || isNaN(offset)) {
+		offset = 0;
+	}
 	const mangaList = [];
 	try {
 		const res = await axios.get(
-			`${baseURL}/manga?limit=20&includes[]=cover_art`
+			`${baseURL}/manga?offset=${offset}&limit=20&includes[]=cover_art`
 		);
 		const data = res.data.data;
 		data.forEach((manga) => {
