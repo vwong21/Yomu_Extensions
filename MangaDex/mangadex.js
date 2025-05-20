@@ -49,7 +49,7 @@ const browseMangaDex = async (offset = 0) => {
 	const mangaList = [];
 	try {
 		const res = await axios.get(
-			`${baseURL}/manga?offset=${offset}&limit=20&includes[]=cover_art`
+			`${baseURL}/manga?offset=${offset}&limit=40&includes[]=cover_art`
 		);
 		const data = res.data.data;
 		data.forEach((manga) => {
