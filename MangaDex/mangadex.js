@@ -2,7 +2,7 @@ import axios from 'axios';
 const baseURL = 'https://api.mangadex.org';
 const baseCoverURL = 'https://uploads.mangadex.org/covers';
 
-const getMangaList = async (title) => {
+const searchManga = async (title) => {
 	try {
 		// Gets a list of related manga based on the title
 		const res = await axios.get(`${baseURL}/manga?includes[]=cover_art`, {
@@ -16,22 +16,21 @@ const getMangaList = async (title) => {
 			const relationships = manga.relationships;
 
 			// Find cover_art attributes
-			const coverArt = relationships
-				.filter((relationship) => relationship.type === 'cover_art')
-				.map((cover) => cover.attributes);
-
+			const coverArtObj =
+				manga.relationships.find(
+					(relation) => relation.type === 'cover_art'
+				) || null;
 			// Define variables outside the return statement
 			const id = manga.id;
 			const title = manga.attributes.title.en; // Ensure to extract the title correctly
 			const cover_art_filename =
 				coverArt.length > 0 ? coverArt[0].fileName : null; // Return the filename or null if none exists
-			const coverURL = `${baseCoverURL}/${id}/${cover_art_filename}`;
-
+			const coverArt = `${baseCoverURL}/${id}/${coverArt.attributes.fileName}` ||
+					null
 			return {
 				id,
 				title,
-				cover_art_filename,
-				coverURL,
+				coverArt,
 			};
 		});
 
@@ -42,7 +41,7 @@ const getMangaList = async (title) => {
 	}
 };
 
-const browseMangaDex = async (offset = 0) => {
+const browseManga = async (offset = 0) => {
 	if (typeof offset !== 'number' || isNaN(offset)) {
 		offset = 0;
 	}
@@ -78,4 +77,4 @@ const browseMangaDex = async (offset = 0) => {
 	}
 };
 
-export { getMangaList, browseMangaDex };
+export { searchManga, browseManga };
