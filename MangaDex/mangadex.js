@@ -1,43 +1,52 @@
 import axios from 'axios';
+
 const baseURL = 'https://api.mangadex.org';
 const baseCoverURL = 'https://uploads.mangadex.org/covers';
 
 const searchManga = async (title) => {
 	try {
-		// Gets a list of related manga based on the title
 		const res = await axios.get(`${baseURL}/manga?includes[]=cover_art`, {
-			params: {
-				title: title,
-			},
+			params: { title },
 		});
 
-		// Create an array of manga objects containing id, title, and cover_art filename
 		const mangaList = res.data.data.map((manga) => {
-			const relationships = manga.relationships;
-
-			// Find cover_art attributes
-			const coverArtObj =
-				manga.relationships.find(
-					(relation) => relation.type === 'cover_art'
-				) || null;
-			// Define variables outside the return statement
 			const id = manga.id;
-			const title = manga.attributes.title.en; // Ensure to extract the title correctly
+
+			// Use the entire title object or safely fallback to English title string
+			// (You can adjust this depending on what your frontend expects)
+			const titleObj = manga.attributes.title;
+			// If you want just English title string, do:
+			// const title = titleObj.en || titleObj['ja-ro'] || Object.values(titleObj)[0] || '';
+			// But here I keep the whole title object for flexibility:
+			const titleToReturn = titleObj;
+
+			// Find the cover_art relationship object, if any
+			const coverArtRel = manga.relationships.find(
+				(relation) => relation.type === 'cover_art'
+			);
+
+			// Safely get the fileName if it exists
 			const cover_art_filename =
-				coverArt.length > 0 ? coverArt[0].fileName : null; // Return the filename or null if none exists
-			const coverArt = `${baseCoverURL}/${id}/${coverArt.attributes.fileName}` ||
-					null
+				coverArtRel && coverArtRel.attributes && coverArtRel.attributes.fileName
+					? coverArtRel.attributes.fileName
+					: null;
+
+			// Construct coverArt URL only if filename is available
+			const coverArt = cover_art_filename
+				? `${baseCoverURL}/${id}/${cover_art_filename}`
+				: null;
+
 			return {
 				id,
-				title,
+				title: titleToReturn,
 				coverArt,
 			};
 		});
 
-		return mangaList; // Return the array of manga objects
+		return mangaList;
 	} catch (error) {
 		console.error(error);
-		return []; // Return an empty array in case of error
+		return [];
 	}
 };
 
@@ -59,15 +68,19 @@ const browseManga = async (offset = 0) => {
 		data.forEach((manga) => {
 			const id = manga.id;
 			const title = manga.attributes.title;
+			const coverArtRel = manga.relationships.find(
+				(relation) => relation.type === 'cover_art'
+			);
+
 			const coverArt =
-				manga.relationships.find(
-					(relation) => relation.type === 'cover_art'
-				) || null;
+				coverArtRel && coverArtRel.attributes && coverArtRel.attributes.fileName
+					? `${baseCoverURL}/${id}/${coverArtRel.attributes.fileName}`
+					: null;
+
 			mangaList.push({
-				title: title,
-				coverArt:
-					`${baseCoverURL}/${id}/${coverArt.attributes.fileName}` ||
-					null,
+				id,
+				title,
+				coverArt,
 			});
 		});
 		return mangaList;
