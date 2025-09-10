@@ -26,7 +26,9 @@ const searchManga = async (title) => {
 
 			// Extract filename safely if it exists
 			const cover_art_filename =
-				coverArtRel && coverArtRel.attributes && coverArtRel.attributes.fileName
+				coverArtRel &&
+				coverArtRel.attributes &&
+				coverArtRel.attributes.fileName
 					? coverArtRel.attributes.fileName
 					: null;
 
@@ -79,7 +81,9 @@ const browseManga = async (offset = 0) => {
 			);
 
 			const coverArt =
-				coverArtRel && coverArtRel.attributes && coverArtRel.attributes.fileName
+				coverArtRel &&
+				coverArtRel.attributes &&
+				coverArtRel.attributes.fileName
 					? `${baseCoverURL}/${id}/${coverArtRel.attributes.fileName}`
 					: null;
 
@@ -102,7 +106,9 @@ const getDetails = async (id) => {
 		id = id.trim(); // Remove any whitespace from the id
 
 		// Fetch manga details including cover art
-		const res = await axios.get(`${baseURL}/manga/${id}?includes[]=cover_art`);
+		const res = await axios.get(
+			`${baseURL}/manga/${id}?includes[]=cover_art`
+		);
 
 		// Extract title (grab first language version available)
 		const title = Object.values(res.data.data.attributes.title)[0];
@@ -117,30 +123,63 @@ const getDetails = async (id) => {
 
 		// Construct cover art URL or null if missing
 		const coverArt =
-			coverArtRel && coverArtRel.attributes && coverArtRel.attributes.fileName
+			coverArtRel &&
+			coverArtRel.attributes &&
+			coverArtRel.attributes.fileName
 				? `${baseCoverURL}/${id}/${coverArtRel.attributes.fileName}`
 				: null;
 
 		// Fetch chapters filtered by English translation and ordered ascending by chapter number
-		const chapters = await axios.get(`${baseURL}/chapter?translatedLanguage[]=en`, {
-			params: {
-				manga: id,
-				order: { chapter: 'asc' }, // Ascending order of chapters
-			},
-		});
+		const getChapters = await axios.get(
+			`${baseURL}/chapter?translatedLanguage[]=en`,
+			{
+				params: {
+					manga: id,
+					order: { chapter: 'asc' }, // Ascending order of chapters
+				},
+			}
+		);
+
+		const seen = new Map();
+
+		for (const chapter of getChapters.data.data) {
+			const chapterNo = parseFloat(chapter.attributes.chapter || 0);
+			const existing = seen.get(chapterNo);
+
+			if (
+				!existing || // if we haven't seen this chapter yet
+				// prefer chapters with titles over ones without
+				(!existing.attributes.title && chapter.attributes.title) ||
+				// if both have titles (or both don't), prefer newer publishAt
+				(!existing.attributes.title === !chapter.attributes.title &&
+					new Date(chapter.attributes.publishAt) >
+						new Date(existing.attributes.publishAt))
+			) {
+				seen.set(chapterNo, chapter);
+			}
+		}
+
+		const uniqueChapters = Array.from(seen.values()).sort(
+			(a, b) =>
+				parseFloat(a.attributes.chapter) -
+				parseFloat(b.attributes.chapter)
+		);
 
 		// Return all details in a single object
 		const data = {
 			title: title,
 			description: description,
 			coverArt: coverArt,
-			chapters: chapters.data.data, // Pass only the chapters array data
+			chapters: uniqueChapters, // Pass only the chapters array data
 		};
+		console.log(data.chapters);
 		return data;
 	} catch (error) {
 		console.error(error);
 		throw new Error(`Error retrieving manga details: ${error}`);
 	}
 };
+
+getDetails('32d76d19-8a05-4db0-9fc2-e0b0648fe9d0');
 
 export { searchManga, browseManga, getDetails };
